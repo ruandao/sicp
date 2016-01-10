@@ -1,0 +1,47 @@
+(restart 1)
+
+(load "~/sicp/3.1/serializer.scm")
+
+(define gid 0)
+(define (make-account amount)
+  (define balance amount)
+  (define id (+ gid 1))
+  (set! gid id)
+  (define (withdraw x)
+    (set! balance (- balance x))
+    balance)
+  (define (depoiste x)
+    (set! balance (+ balance x))
+    balance)
+  (let ((serializer (make-serializer)))
+    (define (dispatch m)
+      (cond
+       ((eq? m 'withdraw) withdraw)
+       ((eq? m 'deposite) depoiste)
+       ((eq? m 'balance) balance)
+       ((eq? m 'serializer) serializer)
+       ((eq? m 'id) id)))
+    dispatch))
+
+(define (exchange a b)
+  (let ((diff (- (a 'balance) (b 'balance))))
+    ((a 'withdraw) diff)
+    ((b 'deposite) diff)))
+
+(define (small-big-pair a b)
+  (if (< (a 'id) (b 'id))
+      (cons a b)
+      (cons b a)))
+
+(define (serialized-exchange a b)
+  (let ((small-big (small-big-pair a b)))
+    (let ((s1 ((car small-big) 'serializer))
+	  (s2 ((cdr small-big) 'serializer)))
+      ((s2 (s1 exchange)) a b))))
+
+
+(define a (make-account 100))
+(define b (make-account 40))
+(serialized-exchange a b)
+(a 'balance)
+(b 'balance)

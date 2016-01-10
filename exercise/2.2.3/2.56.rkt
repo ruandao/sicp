@@ -1,0 +1,73 @@
+;#lang planet neil/sicp
+#lang racket
+;(require (planet soegaard/sicp:2:1/sicp))
+;(define wave einstein)
+
+
+(define (pl x)
+  (display x)
+  (newline))
+(define (deriv exp var)
+  (cond ((number? exp) 0)
+        ((variable? exp)
+         (if (same-variable? exp var) 1 0))
+        ((sum? exp)
+         (make-sum (deriv (addend exp) var)
+                   (deriv (augend exp) var)))
+        ((product? exp)
+         (make-sum (make-product (deriv (multiplier exp) var)
+                                 (multiplicand exp))
+                   (make-product (multiplier exp)
+                                 (deriv (multiplicand exp) var))))
+        ((exponentiation? exp)
+         (let ((exponent (exponent-exp exp))
+               (base (base-exp exp)))
+           (make-product (make-product exponent
+                                       (make-exponentiation base
+                                                            (make-sum exponent -1)))
+                         (deriv base var))))
+        (else
+         (error "unknown expression type -- DERIV" exp))))
+
+(define (variable? x) (symbol? x))
+(define (same-variable? v1 v2)
+  (and (variable? v1) (variable? v2)
+       (eq? v1 v2)))
+(define (make-sum a1 a2) 
+  (cond ((eq? a1 0) a2)
+        ((eq? a2 0) a1)
+        ((and (number? a1) (number? a2)) (+ a1 a2))
+        (else (list '+ a1 a2))))
+
+(define (make-product m1 m2)
+  (cond ((or (eq? m1 0) (eq? m2 0)) 0)
+        ((eq? m1 1) m2)
+        ((eq? m2 1) m1)
+        ((and (number? m1) (number? m2)) (* m1 m2))
+        (else (list '* m1 m2))))
+(define (sum? x)
+  (and (pair? x) (eq? (car x) '+)))
+(define (addend s) (cadr s))
+(define (augend s) (caddr s))
+
+(define (product? x)
+  (and (pair? x) (eq? (car x) '*)))
+(define (multiplier p) (cadr p))
+(define (multiplicand p) (caddr p))
+
+(define (make-exponentiation base exponent)
+  (cond ((eq? exponent 1) base)
+        ((eq? exponent 0) 1)
+        (else (list '** base exponent))))
+(define (base-exp exp) (cadr exp))
+(define (exponent-exp exp) (caddr exp))
+(define (exponentiation? exp) 
+  (and 
+;   (variable? exp) 
+   (pair? exp) 
+   (eq? (car exp) '**)))
+
+(deriv '(+ x 3) 'x)
+(deriv '(* x y) 'x)
+(deriv '(* (* x y) (+ x 3)) 'x)
+(deriv '(** (* 3 x) 1) 'x)
